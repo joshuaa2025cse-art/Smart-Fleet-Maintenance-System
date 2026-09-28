@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Run Fleet Telemetry (Default - H2 In-Memory)",
+            "request": "launch",
+            "mainClass": "com.fleet.fleet_telemetry.FleetTelemetryApplication",
+            "projectName": "fleet-telemetry"
+        },
+        {
+            "type": "java",
+            "name": "Run Fleet Telemetry (MySQL Profile)",
+            "request": "launch",
+            "mainClass": "com.fleet.fleet_telemetry.FleetTelemetryApplication",
+            "projectName": "fleet-telemetry",
+            "args": "--spring.profiles.active=mysql"
+        }
+    ]
+}

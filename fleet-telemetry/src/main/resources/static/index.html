@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fleet Telemetry &amp; Authentication Portal</title>
+  <meta name="description" content="Simple and elegant authentication portal and fleet predictive telemetry dashboard for vehicle monitoring, tire health, and alerts." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0a0f1d;
+      --bg-card: rgba(17, 24, 39, 0.85);
+      --bg-input: rgba(15, 23, 42, 0.8);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-focus: #38bdf8;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --primary-glow: rgba(56, 189, 248, 0.25);
+      --secondary: #818cf8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.12) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Toast Notification Container */
+    #toast-container {
+      position: fixed;
+      top: 1.5rem;
+      right: 1.5rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      max-width: 380px;
+      pointer-events: none;
+    }
+
+    .toast {
+      pointer-events: auto;
+      padding: 1rem 1.25rem;
+      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--border-subtle);
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      color: #fff;
+    }
+
+    .toast-success {
+      background: rgba(16, 185, 129, 0.9);
+      border-color: #34d399;
+    }
+
+    .toast-error {
+      background: rgba(239, 68, 68, 0.9);
+      border-color: #f87171;
+    }
+
+    .toast-info {
+      background: rgba(14, 116, 144, 0.9);
+      border-color: #38bdf8;
+    }
+
+    @keyframes toastSlideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Navigation Bar */
+    header {
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(10, 15, 29, 0.85);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      cursor: pointer;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #0284c7, #6366f1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 16px var(--primary-glow);
+    }
+
+    .brand-icon svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: #fff;
+      stroke-width: 2;
+    }
+
+    .brand-text h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(to right, #ffffff, #93c5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-text p {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .user-pill {
+      display: none;
+      align-items: center;
+      gap: 0.6rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.82rem;
+    }
+
+    .user-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #0284c7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+
+    .btn {
+      padding: 0.55rem 1.15rem;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      border: none;
+      outline: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(2, 132, 199, 0.5);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--border-focus);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.25);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.5rem;
+    }
+
+    /* Authentication Card Section */
+    #auth-section {
+      width: 100%;
+      max-width: 440px;
+      animation: fadeIn 0.4s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 2.25rem 2rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 40px rgba(56, 189, 248, 0.08);
+    }
+
+    .auth-tabs {
+      display: flex;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 0.3rem;
+      border-radius: 12px;
+      margin-bottom: 1.75rem;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .tab-btn {
+      flex: 1;
+      text-align: center;
+      padding: 0.6rem 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-radius: 8px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .auth-header h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+
+    .auth-header p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      text-align: left;
+    }
+
+    .form-label {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: #cbd5e1;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.9rem;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    }
+
+    .toggle-pwd {
+      position: absolute;
+      right: 0.85rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.2rem;
+    }
+
+    .toggle-pwd:hover {
+      color: #fff;
+    }
+
+    .toggle-pwd svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .form-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .form-check {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      cursor: pointer;
+    }
+
+    .link-btn {
+      background: transparent;
+      border: none;
+      color: var(--primary);
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .link-btn:hover {
+      text-decoration: underline;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 0.85rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      border: none;
+      box-shadow: 0 4px 16px rgba(2, 132, 199, 0.35);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 22px rgba(2, 132, 199, 0.5);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .demo-box {
+      margin-top: 1.25rem;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px dashed rgba(56, 189, 248, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.78rem;
+    }
+
+    .demo-info {
+      color: #bae6fd;
+    }
+
+    .demo-info strong {
+      color: #fff;
+    }
+
+    .quick-fill-btn {
+      background: rgba(56, 189, 248, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #e0f2fe;
+      padding: 0.35rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .quick-fill-btn:hover {
+      background: rgba(56, 189, 248, 0.35);
+    }
+
+    /* Password Strength Bar */
+    .strength-meter {
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.1);
+      margin-top: 0.3rem;
+      overflow: hidden;
+      display: none;
+    }
+
+    .strength-fill {
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s ease, background 0.3s ease;
+    }
+
+    /* Dashboard View */
+    #dashboard-section {
+      display: none;
+      width: 100%;
+      max-width: 1300px;
+      animation: fadeIn 0.4s ease forwards;
+    }
+
+    .dashboard-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .dashboard-title h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+
+    .dashboard-title p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .metric-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .metric-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .metric-tag {
+      font-size: 0.75rem;
+      color: #34d399;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    /* 2-Column Section */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .vehicle-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+
+    .vehicle-item {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 0.9rem 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: border-color 0.2s ease;
+    }
+
+    .vehicle-item:hover {
+      border-color: var(--border-focus);
+    }
+
+    .plate-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #38bdf8;
+    }
+
+    .model-name {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .status-tag {
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .status-active {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status-alert {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .alerts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+
+    .alert-item {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-left: 4px solid #ef4444;
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      font-size: 0.82rem;
+    }
+
+    .alert-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.25rem;
+      font-weight: 600;
+      color: #fca5a5;
+    }
+
+    .alert-msg {
+      color: #cbd5e1;
+    }
+
+    .alert-time {
+      font-size: 0.7rem;
+      color: #94a3b8;
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 0.3rem;
+    }
+
+    /* Simulation Form */
+    .sim-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      background: rgba(15, 23, 42, 0.4);
+      padding: 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .sim-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 600px) {
+      .sim-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      border-top: 1px solid var(--border-subtle);
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Toast Container -->
+  <div id="toast-container" role="status" aria-live="polite"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand" onclick="navigateTo('login')">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M5 17h14v-5l-3-4H8L5 12v5z"></path>
+          <circle cx="7.5" cy="17.5" r="2.5"></circle>
+          <circle cx="16.5" cy="17.5" r="2.5"></circle>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>Fleet Telemetry</h1>
+        <p>Predictive Maintenance Portal</p>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <!-- User profile info when logged in -->
+      <div id="user-badge" class="user-pill">
+        <div class="user-avatar" id="avatar-letter">A</div>
+        <span id="user-display-name">Admin</span>
+        <button id="logout-btn" class="btn btn-danger" onclick="logout()" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; border-radius: 6px;">
+          Log Out
+        </button>
+      </div>
+
+      <!-- Quick toggle to dashboard/auth if already authenticated -->
+      <button id="nav-dash-btn" class="btn btn-secondary" style="display:none;" onclick="showDashboard()">
+        Go to Dashboard
+      </button>
+    </div>
+  </header>
+
+  <!-- Main View -->
+  <main>
+
+    <!-- AUTH SECTION: Login, Register, Forgot Password -->
+    <section id="auth-section">
+      <div class="auth-card">
+
+        <!-- Top Tabs Switcher -->
+        <div class="auth-tabs" role="tablist">
+          <button id="tab-login" class="tab-btn active" role="tab" onclick="switchAuthTab('login')">Sign In</button>
+          <button id="tab-register" class="tab-btn" role="tab" onclick="switchAuthTab('register')">Register</button>
+          <button id="tab-reset" class="tab-btn" role="tab" onclick="switchAuthTab('reset')">Reset Password</button>
+        </div>
+
+        <!-- 1. LOGIN FORM -->
+        <div id="login-view">
+          <div class="auth-header">
+            <h2>Welcome Back</h2>
+            <p>Access your fleet telemetry and vehicle dashboard</p>
+          </div>
+
+          <form id="login-form" class="auth-form" onsubmit="handleLogin(event)">
+            <div class="form-group">
+              <label class="form-label" for="login-username">Username or Email</label>
+              <input type="text" id="login-username" class="form-input" placeholder="e.g. admin or admin@fleet.com" required autocomplete="username" />
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <label for="login-password">Password</label>
+                <a href="#reset" class="link-btn" onclick="switchAuthTab('reset')">Forgot?</a>
+              </div>
+              <div class="input-wrapper">
+                <input type="password" id="login-password" class="form-input" placeholder="••••••••" required autocomplete="current-password" />
+                <button type="button" class="toggle-pwd" onclick="togglePasswordVisibility('login-password')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <label class="form-check">
+                <input type="checkbox" id="login-remember" />
+                <span>Remember me</span>
+              </label>
+            </div>
+
+            <button type="submit" id="btn-submit-login" class="submit-btn">
+              <span>Sign In to Fleet</span>
+            </button>
+          </form>
+
+          <!-- Quick Fill Demo -->
+          <div class="demo-box">
+            <div class="demo-info">
+              Demo: <strong>admin</strong> / <strong>admin123</strong>
+            </div>
+            <button type="button" class="quick-fill-btn" onclick="fillDemoCredentials()">Quick Fill</button>
+          </div>
+        </div>
+
+        <!-- 2. REGISTER FORM -->
+        <div id="register-view" style="display: none;">
+          <div class="auth-header">
+            <h2>Create an Account</h2>
+            <p>Join the fleet management system in seconds</p>
+          </div>
+
+          <form id="register-form" class="auth-form" onsubmit="handleRegister(event)">
+            <div class="form-group">
+              <label class="form-label" for="reg-fullname">Full Name</label>
+              <input type="text" id="reg-fullname" class="form-input" placeholder="e.g. Michael Scott" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="reg-username">Username</label>
+              <input type="text" id="reg-username" class="form-input" placeholder="e.g. michael22" required autocomplete="username" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="reg-email">Email Address</label>
+              <input type="email" id="reg-email" class="form-input" placeholder="e.g. michael@fleet.com" required autocomplete="email" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="reg-password">Password (min 6 characters)</label>
+              <div class="input-wrapper">
+                <input type="password" id="reg-password" class="form-input" placeholder="••••••••" required minlength="6" oninput="checkStrength(this.value)" autocomplete="new-password" />
+                <button type="button" class="toggle-pwd" onclick="togglePasswordVisibility('reg-password')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </div>
+              <div id="strength-meter" class="strength-meter">
+                <div id="strength-fill" class="strength-fill"></div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="reg-confirm">Confirm Password</label>
+              <div class="input-wrapper">
+                <input type="password" id="reg-confirm" class="form-input" placeholder="••••••••" required minlength="6" autocomplete="new-password" />
+                <button type="button" class="toggle-pwd" onclick="togglePasswordVisibility('reg-confirm')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" id="btn-submit-register" class="submit-btn">
+              <span>Create Account</span>
+            </button>
+
+            <div style="text-align: center; margin-top: 0.5rem; font-size: 0.82rem; color: var(--text-muted);">
+              Already registered? <a href="#login" class="link-btn" onclick="switchAuthTab('login')">Sign In here</a>
+            </div>
+          </form>
+        </div>
+
+        <!-- 3. RESET PASSWORD FORM -->
+        <div id="reset-view" style="display: none;">
+          <div class="auth-header">
+            <h2>Reset Password</h2>
+            <p>Update your credentials securely</p>
+          </div>
+
+          <form id="reset-form" class="auth-form" onsubmit="handleResetPassword(event)">
+            <div class="form-group">
+              <label class="form-label" for="reset-username">Username or Email</label>
+              <input type="text" id="reset-username" class="form-input" placeholder="Enter username or email" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="reset-new-password">New Password</label>
+              <div class="input-wrapper">
+                <input type="password" id="reset-new-password" class="form-input" placeholder="••••••••" required minlength="6" />
+                <button type="button" class="toggle-pwd" onclick="togglePasswordVisibility('reset-new-password')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="reset-confirm">Confirm New Password</label>
+              <div class="input-wrapper">
+                <input type="password" id="reset-confirm" class="form-input" placeholder="••••••••" required minlength="6" />
+                <button type="button" class="toggle-pwd" onclick="togglePasswordVisibility('reset-confirm')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" id="btn-submit-reset" class="submit-btn">
+              <span>Update Password</span>
+            </button>
+
+            <div style="text-align: center; margin-top: 0.5rem; font-size: 0.82rem; color: var(--text-muted);">
+              Remembered your password? <a href="#login" class="link-btn" onclick="switchAuthTab('login')">Back to Sign In</a>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- DASHBOARD SECTION: Live Vehicles & Predictive Telemetry -->
+    <section id="dashboard-section">
+      <div class="dashboard-header">
+        <div class="dashboard-title">
+          <h2>Fleet Health &amp; Predictive Maintenance</h2>
+          <p>Real-time vehicle telemetry analytics, automated diagnostics, and alert system</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+          <button class="btn btn-secondary" onclick="refreshDashboardData()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Refresh Data
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <span class="metric-label">Registered Fleet</span>
+          <div class="metric-value" id="kpi-total-vehicles">0</div>
+          <span class="metric-tag">Total active haulers</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Active Alerts</span>
+          <div class="metric-value" id="kpi-total-alerts" style="color: #f87171;">0</div>
+          <span class="metric-tag" style="color: #f87171;">Critical anomalies detected</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Telemetry Ingest</span>
+          <div class="metric-value" style="color: #38bdf8;">ONLINE</div>
+          <span class="metric-tag">Predictive AI active</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">System Health</span>
+          <div class="metric-value" style="color: #34d399;">100%</div>
+          <span class="metric-tag">Database synced</span>
+        </div>
+      </div>
+
+      <!-- Main Panels -->
+      <div class="dashboard-grid">
+
+        <!-- Left: Vehicles & Telemetry Simulation -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          
+          <!-- Vehicles Card -->
+          <div class="card">
+            <div class="card-title">
+              <span>Monitored Vehicles</span>
+              <span id="vehicle-count-badge" style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">Loading...</span>
+            </div>
+            <div id="vehicle-container" class="vehicle-list">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Live Telemetry Ingest Form -->
+          <div class="card">
+            <div class="card-title">
+              <span>Ingest Tire Telemetry (Predictive Rule Test)</span>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">
+              Rule: Pressure &lt; 30 PSI, Temp &gt; 85°C, or Tread &lt; 2.0 mm triggers <strong>CRITICAL ALERT</strong>.
+            </p>
+
+            <form class="sim-form" onsubmit="submitTelemetry(event)">
+              <div class="form-group">
+                <label class="form-label" for="sim-vehicle-id">Select Vehicle</label>
+                <select id="sim-vehicle-id" class="form-input">
+                  <!-- Filled dynamically -->
+                </select>
+              </div>
+
+              <div class="sim-grid">
+                <div class="form-group">
+                  <label class="form-label" for="sim-pressure">Pressure (PSI)</label>
+                  <input type="number" step="0.1" id="sim-pressure" class="form-input" value="32.0" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="sim-temp">Temp (°C)</label>
+                  <input type="number" step="0.1" id="sim-temp" class="form-input" value="68.0" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="sim-tread">Tread (mm)</label>
+                  <input type="number" step="0.1" id="sim-tread" class="form-input" value="5.5" required />
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 0.75rem; margin-top: 0.35rem;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">
+                  Send Telemetry Packet
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="simulateCriticalPacket()">
+                  Simulate Critical Fault
+                </button>
+              </div>
+            </form>
+          </div>
+
+        </div>
+
+        <!-- Right: Real-time Maintenance Alerts -->
+        <div class="card">
+          <div class="card-title">
+            <span>Maintenance Alerts</span>
+            <span id="alert-count-badge" style="font-size: 0.75rem; color: #f87171; font-weight: normal;">0 Active</span>
+          </div>
+          <div id="alerts-container" class="alerts-list">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <p>Fleet Telemetry &amp; Maintenance Platform &bull; Built with Spring Boot &bull; Powered by REST APIs</p>
+  </footer>
+
+  <!-- Logic Script -->
+  <script>
+    // State management
+    const state = {
+      user: null,
+      vehicles: [],
+      alerts: []
+    };
+
+    // Notification Helper
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // Tab Switching: 'login' | 'register' | 'reset'
+    function switchAuthTab(tab) {
+      document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+      document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+      document.getElementById('tab-reset').classList.toggle('active', tab === 'reset');
+
+      document.getElementById('login-view').style.display = (tab === 'login') ? 'block' : 'none';
+      document.getElementById('register-view').style.display = (tab === 'register') ? 'block' : 'none';
+      document.getElementById('reset-view').style.display = (tab === 'reset') ? 'block' : 'none';
+
+      window.location.hash = tab;
+    }
+
+    // Toggle Password Visibility
+    function togglePasswordVisibility(inputId) {
+      const input = document.getElementById(inputId);
+      input.type = (input.type === 'password') ? 'text' : 'password';
+    }
+
+    // Quick fill demo user
+    function fillDemoCredentials() {
+      document.getElementById('login-username').value = 'admin';
+      document.getElementById('login-password').value = 'admin123';
+      showToast('Demo credentials inserted: admin / admin123', 'info');
+    }
+
+    // Password strength check
+    function checkStrength(pwd) {
+      const meter = document.getElementById('strength-meter');
+      const fill = document.getElementById('strength-fill');
+      if (!pwd) {
+        meter.style.display = 'none';
+        return;
+      }
+      meter.style.display = 'block';
+      let score = 0;
+      if (pwd.length >= 6) score += 30;
+      if (pwd.length >= 10) score += 30;
+      if (/[A-Z]/.test(pwd)) score += 20;
+      if (/[0-9!@#$%^&*]/.test(pwd)) score += 20;
+
+      fill.style.width = score + '%';
+      if (score < 40) fill.style.background = '#ef4444';
+      else if (score < 70) fill.style.background = '#f59e0b';
+      else fill.style.background = '#10b981';
+    }
+
+    // Login Handler
+    async function handleLogin(e) {
+      e.preventDefault();
+      const usernameOrEmail = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+      const submitBtn = document.getElementById('btn-submit-login');
+
+      if (!usernameOrEmail || !password) {
+        showToast('Please enter both username and password.', 'error');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Signing in...';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usernameOrEmail, password })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          showToast(data.message || 'Login successful!', 'success');
+          state.user = {
+            username: data.username,
+            fullName: data.fullName || data.username,
+            email: data.email,
+            role: data.role || 'FLEET_MANAGER'
+          };
+          localStorage.setItem('fleet_user', JSON.stringify(state.user));
+          showDashboard();
+        } else {
+          showToast(data.message || 'Invalid username or password.', 'error');
+        }
+      } catch (err) {
+        showToast('Connection error connecting to server.', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>Sign In to Fleet</span>';
+      }
+    }
+
+    // Register Handler
+    async function handleRegister(e) {
+      e.preventDefault();
+      const fullName = document.getElementById('reg-fullname').value.trim();
+      const username = document.getElementById('reg-username').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const confirm = document.getElementById('reg-confirm').value;
+      const submitBtn = document.getElementById('btn-submit-register');
+
+      if (password !== confirm) {
+        showToast('Passwords do not match.', 'error');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Creating account...';
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fullName, username, email, password })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          showToast('Account created successfully! Please sign in.', 'success');
+          document.getElementById('register-form').reset();
+          switchAuthTab('login');
+          document.getElementById('login-username').value = username;
+          document.getElementById('login-password').focus();
+        } else {
+          showToast(data.message || 'Failed to create account.', 'error');
+        }
+      } catch (err) {
+        showToast('Connection error connecting to server.', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>Create Account</span>';
+      }
+    }
+
+    // Reset Password Handler
+    async function handleResetPassword(e) {
+      e.preventDefault();
+      const usernameOrEmail = document.getElementById('reset-username').value.trim();
+      const newPassword = document.getElementById('reset-new-password').value;
+      const confirm = document.getElementById('reset-confirm').value;
+      const submitBtn = document.getElementById('btn-submit-reset');
+
+      if (newPassword !== confirm) {
+        showToast('New passwords do not match.', 'error');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Resetting password...';
+
+      try {
+        const res = await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usernameOrEmail, newPassword })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          showToast(data.message || 'Password successfully updated!', 'success');
+          document.getElementById('reset-form').reset();
+          switchAuthTab('login');
+        } else {
+          showToast(data.message || 'Could not reset password.', 'error');
+        }
+      } catch (err) {
+        showToast('Connection error connecting to server.', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>Update Password</span>';
+      }
+    }
+
+    // Switch to Dashboard View
+    function showDashboard() {
+      document.getElementById('auth-section').style.display = 'none';
+      document.getElementById('dashboard-section').style.display = 'block';
+
+      // Update Nav
+      const user = state.user || { fullName: 'Fleet Administrator', username: 'admin' };
+      document.getElementById('user-badge').style.display = 'inline-flex';
+      document.getElementById('user-display-name').textContent = user.fullName || user.username;
+      document.getElementById('avatar-letter').textContent = (user.fullName || user.username).charAt(0).toUpperCase();
+      document.getElementById('nav-dash-btn').style.display = 'none';
+
+      window.location.hash = 'dashboard';
+      refreshDashboardData();
+    }
+
+    // Logout Handler
+    function logout() {
+      state.user = null;
+      localStorage.removeItem('fleet_user');
+      document.getElementById('user-badge').style.display = 'none';
+      document.getElementById('dashboard-section').style.display = 'none';
+      document.getElementById('auth-section').style.display = 'block';
+      document.getElementById('nav-dash-btn').style.display = 'none';
+      switchAuthTab('login');
+      showToast('Logged out successfully.', 'info');
+    }
+
+    // Dashboard Data Fetching
+    async function refreshDashboardData() {
+      await Promise.all([loadVehicles(), loadAlerts()]);
+    }
+
+    async function loadVehicles() {
+      try {
+        const res = await fetch('/api/vehicles');
+        if (res.ok) {
+          const vehicles = await res.json();
+          state.vehicles = vehicles;
+          document.getElementById('kpi-total-vehicles').textContent = vehicles.length;
+          document.getElementById('vehicle-count-badge').textContent = `${vehicles.length} vehicles registered`;
+
+          // Fill select dropdown
+          const select = document.getElementById('sim-vehicle-id');
+          select.innerHTML = '';
+
+          const container = document.getElementById('vehicle-container');
+          container.innerHTML = '';
+
+          if (vehicles.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem; padding:1rem;">No vehicles found.</p>';
+            return;
+          }
+
+          vehicles.forEach(v => {
+            // Select option
+            const opt = document.createElement('option');
+            opt.value = v.id;
+            opt.textContent = `Vehicle #${v.id} (${v.licensePlate} - ${v.model})`;
+            select.appendChild(opt);
+
+            // Card item
+            const div = document.createElement('div');
+            div.className = 'vehicle-item';
+            div.innerHTML = `
+              <div>
+                <span class="plate-badge">${v.licensePlate}</span>
+                <div class="model-name">${v.model} &bull; ID: ${v.id}</div>
+              </div>
+              <span class="status-tag ${v.status === 'ACTIVE' ? 'status-active' : 'status-alert'}">
+                ${v.status || 'ACTIVE'}
+              </span>
+            `;
+            container.appendChild(div);
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load vehicles', err);
+      }
+    }
+
+    async function loadAlerts() {
+      try {
+        const res = await fetch('/api/maintenance-alerts');
+        if (res.ok) {
+          const alerts = await res.json();
+          state.alerts = alerts;
+          document.getElementById('kpi-total-alerts').textContent = alerts.length;
+          document.getElementById('alert-count-badge').textContent = `${alerts.length} Active`;
+
+          const container = document.getElementById('alerts-container');
+          container.innerHTML = '';
+
+          if (alerts.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem; padding:1rem;">No active maintenance alerts. Fleet operating smoothly!</p>';
+            return;
+          }
+
+          alerts.slice().reverse().forEach(a => {
+            const div = document.createElement('div');
+            div.className = 'alert-item';
+            const dateStr = a.timestamp ? new Date(a.timestamp).toLocaleString() : 'Just now';
+            div.innerHTML = `
+              <div class="alert-header">
+                <span>Vehicle #${a.vehicleId}</span>
+                <span>${a.severity || 'CRITICAL'}</span>
+              </div>
+              <div class="alert-msg">${a.alertMessage}</div>
+              <div class="alert-time">${dateStr}</div>
+            `;
+            container.appendChild(div);
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load alerts', err);
+      }
+    }
+
+    // Submit Simulated Telemetry Packet
+    async function submitTelemetry(e) {
+      e.preventDefault();
+      const vehicleId = document.getElementById('sim-vehicle-id').value;
+      const tirePressure = parseFloat(document.getElementById('sim-pressure').value);
+      const tireTemperature = parseFloat(document.getElementById('sim-temp').value);
+      const treadDepth = parseFloat(document.getElementById('sim-tread').value);
+
+      if (!vehicleId) {
+        showToast('Please select a vehicle.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/telemetry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vehicleId, tirePressure, tireTemperature, treadDepth })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          if (data.healthStatus === 'CRITICAL - MAINTENANCE REQUIRED') {
+            showToast(`🚨 CRITICAL FAULT DETECTED: Status = ${data.healthStatus}`, 'error');
+          } else {
+            showToast(`✅ Ingested Telemetry for Vehicle #${vehicleId}: Status = ${data.healthStatus}`, 'success');
+          }
+          refreshDashboardData();
+        } else {
+          showToast('Failed to ingest telemetry.', 'error');
+        }
+      } catch (err) {
+        showToast('Server connection error.', 'error');
+      }
+    }
+
+    // Helper: Fill simulation form with critical values
+    function simulateCriticalPacket() {
+      document.getElementById('sim-pressure').value = '26.8';
+      document.getElementById('sim-temp').value = '89.5';
+      document.getElementById('sim-tread').value = '1.7';
+      showToast('Populated critical values: 26.8 PSI (Low), 89.5°C (High), 1.7mm (Worn)', 'info');
+    }
+
+    // Initialization & Hash routing
+    window.addEventListener('DOMContentLoaded', () => {
+      // Check stored user session
+      const stored = localStorage.getItem('fleet_user');
+      if (stored) {
+        try {
+          state.user = JSON.parse(stored);
+        } catch (e) {
+          localStorage.removeItem('fleet_user');
+        }
+      }
+
+      const hash = window.location.hash.replace('#', '') || 'login';
+
+      if (state.user && hash === 'dashboard') {
+        showDashboard();
+      } else if (state.user) {
+        // Show dash button if user is already logged in
+        document.getElementById('nav-dash-btn').style.display = 'inline-flex';
+        switchAuthTab(hash === 'dashboard' ? 'login' : hash);
+      } else {
+        switchAuthTab(hash === 'dashboard' ? 'login' : hash);
+      }
+    });
+
+    window.addEventListener('hashchange', () => {
+      const hash = window.location.hash.replace('#', '') || 'login';
+      if (hash === 'dashboard') {
+        if (state.user) showDashboard();
+        else switchAuthTab('login');
+      } else {
+        switchAuthTab(hash);
+      }
+    });
+  </script>
+</body>
+</html>

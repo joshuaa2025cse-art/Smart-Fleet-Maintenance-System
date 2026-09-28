@@ -1,0 +1,27 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run Spring Boot App (Maven Wrapper)",
+            "type": "shell",
+            "command": ".\\mvnw.cmd spring-boot:run",
+            "options": {
+                "cwd": "${workspaceFolder}/fleet-telemetry"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Spring Boot App with MySQL Profile",
+            "type": "shell",
+            "command": ".\\mvnw.cmd spring-boot:run \"-Dspring-boot.run.profiles=mysql\"",
+            "options": {
+                "cwd": "${workspaceFolder}/fleet-telemetry"
+            },
+            "problemMatcher": []
+        }
+    ]
+}
