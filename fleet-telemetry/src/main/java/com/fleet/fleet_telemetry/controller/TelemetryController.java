@@ -14,8 +14,7 @@ import com.fleet.fleet_telemetry.model.TireTelemetry;
 import com.fleet.fleet_telemetry.service.TelemetryService;
 
 @RestController
-@RequestMapping("/api/telemetry")
-public class TelemetryController {
+@RequestMapping("/api/telemetry")public class TelemetryController {
 
     private final TelemetryService telemetryService;
 
